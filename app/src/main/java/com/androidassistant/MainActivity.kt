@@ -51,9 +51,11 @@ class MainActivity : Activity() {
                     val response = router.execute(command)
 
                     responseText.text = response
-                    status.text = "Готовий"
+                    status.text = "Чекаю «Оріон»"
 
                     speech.speak(response)
+
+                    startWakeWord()
                 }
             },
 
@@ -61,17 +63,25 @@ class MainActivity : Activity() {
                 runOnUiThread {
                     stopMicAnimation()
 
-                    status.text = "Помилка"
+                    status.text = "Чекаю «Оріон»"
                     responseText.text = error
 
                     speech.speak(error)
+
+                    startWakeWord()
                 }
             },
 
             onListeningChanged = { listening ->
                 runOnUiThread {
                     if (listening) {
-                        status.text = "Слухаю..."
+                        status.text =
+                            if (isWakeMode()) {
+                                "Чекаю «Оріон»..."
+                            } else {
+                                "Слухаю..."
+                            }
+
                         listenButton.text = "🎙️"
                         startMicAnimation()
                     } else {
@@ -79,15 +89,62 @@ class MainActivity : Activity() {
                         stopMicAnimation()
                     }
                 }
+            },
+
+            onWakeWord = {
+                runOnUiThread {
+                    stopMicAnimation()
+
+                    status.text = "Слухаю..."
+                    responseText.text = "Так, слухаю."
+
+                    speech.speak("Так, слухаю.")
+
+                    listenButton.text = "🎙️"
+
+                    voice.start("uk-UA")
+                }
             }
         )
 
         listenButton.setOnClickListener {
             startVoiceRecognition()
         }
+
+        if (
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            startWakeWord()
+        } else {
+            requestPermissions(
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                REQUEST_RECORD_AUDIO
+            )
+        }
+    }
+
+    private var wakeModeActive = false
+
+    private fun isWakeMode(): Boolean {
+        return wakeModeActive
+    }
+
+    private fun startWakeWord() {
+        wakeModeActive = true
+
+        status.text = "Чекаю «Оріон»..."
+
+        try {
+            voice.startWakeWord("uk-UA")
+        } catch (_: Exception) {
+            status.text = "Помилка запуску"
+        }
     }
 
     private fun startVoiceRecognition() {
+        wakeModeActive = false
+
         if (
             checkSelfPermission(Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED
@@ -145,9 +202,9 @@ class MainActivity : Activity() {
             grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
-            voice.start("uk-UA")
+            startWakeWord()
         } else {
-            status.text = "Потрібен дозвіл"
+            status.text = "Потрібен дозвіл на мікрофон"
         }
     }
 
