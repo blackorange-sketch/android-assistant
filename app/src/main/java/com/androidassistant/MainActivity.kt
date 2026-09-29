@@ -24,6 +24,8 @@ class MainActivity : Activity() {
     private lateinit var listenButton: Button
 
     private var micAnimator: AnimatorSet? = null
+    private var wakeModeActive = false
+    private var listening = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +45,7 @@ class MainActivity : Activity() {
 
             onResult = { command ->
                 runOnUiThread {
+                    listening = false
                     stopMicAnimation()
 
                     commandText.text = command
@@ -61,10 +64,11 @@ class MainActivity : Activity() {
 
             onError = { error ->
                 runOnUiThread {
+                    listening = false
                     stopMicAnimation()
 
-                    status.text = "Чекаю «Оріон»"
                     responseText.text = error
+                    status.text = "Чекаю «Оріон»"
 
                     speech.speak(error)
 
@@ -72,9 +76,11 @@ class MainActivity : Activity() {
                 }
             },
 
-            onListeningChanged = { listening ->
+            onListeningChanged = { isListening ->
                 runOnUiThread {
-                    if (listening) {
+                    listening = isListening
+
+                    if (isListening) {
                         status.text =
                             if (isWakeMode()) {
                                 "Чекаю «Оріон»..."
@@ -93,6 +99,8 @@ class MainActivity : Activity() {
 
             onWakeWord = {
                 runOnUiThread {
+                    wakeModeActive = false
+
                     stopMicAnimation()
 
                     status.text = "Слухаю..."
@@ -108,12 +116,24 @@ class MainActivity : Activity() {
         )
 
         listenButton.setOnClickListener {
-            startVoiceRecognition()
+            if (listening && !wakeModeActive) {
+                voice.stop()
+
+                listening = false
+                stopMicAnimation()
+
+                status.text = "Чекаю «Оріон»"
+
+                startWakeWord()
+            } else {
+                startVoiceRecognition()
+            }
         }
 
         if (
-            checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-            == PackageManager.PERMISSION_GRANTED
+            checkSelfPermission(
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
         ) {
             startWakeWord()
         } else {
@@ -124,16 +144,13 @@ class MainActivity : Activity() {
         }
     }
 
-    private var wakeModeActive = false
-
     private fun isWakeMode(): Boolean {
         return wakeModeActive
     }
 
     private fun startWakeWord() {
         wakeModeActive = true
-
-        status.text = "Чекаю «Оріон»..."
+        status.text = "Чекаю «Оріон»"
 
         try {
             voice.startWakeWord("uk-UA")
@@ -146,8 +163,9 @@ class MainActivity : Activity() {
         wakeModeActive = false
 
         if (
-            checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED
+            checkSelfPermission(
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissions(
                 arrayOf(Manifest.permission.RECORD_AUDIO),
@@ -165,10 +183,11 @@ class MainActivity : Activity() {
     private fun startMicAnimation() {
         if (micAnimator != null) return
 
-        micAnimator = AnimatorInflater.loadAnimator(
-            this,
-            R.animator.mic_pulse
-        ) as AnimatorSet
+        micAnimator =
+            AnimatorInflater.loadAnimator(
+                this,
+                R.animator.mic_pulse
+            ) as AnimatorSet
 
         micAnimator?.setTarget(listenButton)
         micAnimator?.start()
@@ -200,7 +219,8 @@ class MainActivity : Activity() {
         if (
             requestCode == REQUEST_RECORD_AUDIO &&
             grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
+            grantResults[0] ==
+            PackageManager.PERMISSION_GRANTED
         ) {
             startWakeWord()
         } else {
