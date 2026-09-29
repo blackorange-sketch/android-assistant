@@ -8,21 +8,28 @@ class SpeechEngine(
     context: Context
 ) {
 
+    private lateinit var tts: TextToSpeech
     private var ready = false
 
-    private val tts = TextToSpeech(context) { status ->
-        if (status == TextToSpeech.SUCCESS) {
-            val result = tts.setLanguage(Locale("uk", "UA"))
-            ready = result != TextToSpeech.LANG_MISSING_DATA &&
-                    result != TextToSpeech.LANG_NOT_SUPPORTED
+    init {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
 
-            tts.setSpeechRate(1.0f)
-            tts.setPitch(1.0f)
+                val languageResult =
+                    tts.setLanguage(Locale("uk", "UA"))
+
+                ready =
+                    languageResult != TextToSpeech.LANG_MISSING_DATA &&
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+
+                tts.setSpeechRate(1.0f)
+                tts.setPitch(1.0f)
+            }
         }
     }
 
     fun speak(text: String) {
-        if (!ready) return
+        if (!ready || text.isBlank()) return
 
         tts.speak(
             text,
@@ -33,11 +40,15 @@ class SpeechEngine(
     }
 
     fun stop() {
-        tts.stop()
+        if (::tts.isInitialized) {
+            tts.stop()
+        }
     }
 
     fun destroy() {
-        tts.stop()
-        tts.shutdown()
+        if (::tts.isInitialized) {
+            tts.stop()
+            tts.shutdown()
+        }
     }
 }
