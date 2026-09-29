@@ -1,6 +1,8 @@
 package com.androidassistant
 
 import android.Manifest
+import android.animation.AnimatorInflater
+import android.animation.AnimatorSet
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -21,6 +23,8 @@ class MainActivity : Activity() {
     private lateinit var responseText: TextView
     private lateinit var listenButton: Button
 
+    private var micAnimator: AnimatorSet? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -39,6 +43,8 @@ class MainActivity : Activity() {
 
             onResult = { command ->
                 runOnUiThread {
+                    stopMicAnimation()
+
                     commandText.text = command
                     status.text = "Обробляю..."
 
@@ -53,8 +59,11 @@ class MainActivity : Activity() {
 
             onError = { error ->
                 runOnUiThread {
+                    stopMicAnimation()
+
                     status.text = "Помилка"
                     responseText.text = error
+
                     speech.speak(error)
                 }
             },
@@ -64,8 +73,10 @@ class MainActivity : Activity() {
                     if (listening) {
                         status.text = "Слухаю..."
                         listenButton.text = "🎙️"
+                        startMicAnimation()
                     } else {
                         listenButton.text = "🎙"
+                        stopMicAnimation()
                     }
                 }
             }
@@ -89,7 +100,33 @@ class MainActivity : Activity() {
         }
 
         status.text = "Слухаю..."
+        startMicAnimation()
+
         voice.start("uk-UA")
+    }
+
+    private fun startMicAnimation() {
+        if (micAnimator != null) return
+
+        micAnimator = AnimatorInflater.loadAnimator(
+            this,
+            R.animator.mic_pulse
+        ) as AnimatorSet
+
+        micAnimator?.setTarget(listenButton)
+        micAnimator?.start()
+    }
+
+    private fun stopMicAnimation() {
+        micAnimator?.cancel()
+        micAnimator = null
+
+        listenButton.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(150)
+            .start()
     }
 
     override fun onRequestPermissionsResult(
@@ -115,6 +152,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        stopMicAnimation()
         voice.destroy()
         speech.destroy()
         super.onDestroy()
