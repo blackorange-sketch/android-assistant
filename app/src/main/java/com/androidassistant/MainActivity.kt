@@ -7,11 +7,13 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import com.androidassistant.core.CommandRouter
+import com.androidassistant.voice.SpeechEngine
 import com.androidassistant.voice.VoiceEngine
 
 class MainActivity : Activity() {
 
     private lateinit var voice: VoiceEngine
+    private lateinit var speech: SpeechEngine
     private lateinit var router: CommandRouter
 
     private lateinit var status: TextView
@@ -28,9 +30,11 @@ class MainActivity : Activity() {
         listenButton = findViewById(R.id.listen)
 
         router = CommandRouter(this)
+        speech = SpeechEngine(this)
 
         voice = VoiceEngine(
             context = this,
+
             onResult = { command ->
                 runOnUiThread {
                     commandText.text = command
@@ -38,17 +42,26 @@ class MainActivity : Activity() {
                     val response = router.execute(command)
 
                     status.text = response
+
+                    speech.speak(response)
                 }
             },
+
             onError = { error ->
                 runOnUiThread {
                     status.text = error
+                    speech.speak(error)
                 }
             },
+
             onListeningChanged = { listening ->
                 runOnUiThread {
                     listenButton.text =
-                        if (listening) "🎙️ Слухаю..." else "🎙️ Слухати"
+                        if (listening) {
+                            "🎙️ Слухаю..."
+                        } else {
+                            "🎙️ Слухати"
+                        }
                 }
             }
         )
@@ -59,7 +72,6 @@ class MainActivity : Activity() {
     }
 
     private fun startVoiceRecognition() {
-
         if (
             checkSelfPermission(Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED
@@ -71,6 +83,7 @@ class MainActivity : Activity() {
             return
         }
 
+        status.text = "Слухаю..."
         voice.start("uk-UA")
     }
 
@@ -98,6 +111,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         voice.destroy()
+        speech.destroy()
         super.onDestroy()
     }
 
