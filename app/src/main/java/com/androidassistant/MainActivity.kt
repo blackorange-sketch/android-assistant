@@ -18,6 +18,7 @@ class MainActivity : Activity() {
 
     private lateinit var status: TextView
     private lateinit var commandText: TextView
+    private lateinit var responseText: TextView
     private lateinit var listenButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,6 +28,7 @@ class MainActivity : Activity() {
 
         status = findViewById(R.id.status)
         commandText = findViewById(R.id.command)
+        responseText = findViewById(R.id.response)
         listenButton = findViewById(R.id.listen)
 
         router = CommandRouter(this)
@@ -38,10 +40,12 @@ class MainActivity : Activity() {
             onResult = { command ->
                 runOnUiThread {
                     commandText.text = command
+                    status.text = "Обробляю..."
 
                     val response = router.execute(command)
 
-                    status.text = response
+                    responseText.text = response
+                    status.text = "Готовий"
 
                     speech.speak(response)
                 }
@@ -49,19 +53,20 @@ class MainActivity : Activity() {
 
             onError = { error ->
                 runOnUiThread {
-                    status.text = error
+                    status.text = "Помилка"
+                    responseText.text = error
                     speech.speak(error)
                 }
             },
 
             onListeningChanged = { listening ->
                 runOnUiThread {
-                    listenButton.text =
-                        if (listening) {
-                            "🎙️ Слухаю..."
-                        } else {
-                            "🎙️ Слухати"
-                        }
+                    if (listening) {
+                        status.text = "Слухаю..."
+                        listenButton.text = "🎙️"
+                    } else {
+                        listenButton.text = "🎙"
+                    }
                 }
             }
         )
@@ -105,7 +110,7 @@ class MainActivity : Activity() {
         ) {
             voice.start("uk-UA")
         } else {
-            status.text = "Потрібен дозвіл на мікрофон"
+            status.text = "Потрібен дозвіл"
         }
     }
 

@@ -5,39 +5,102 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="32dp">
+    android:gravity="center_horizontal"
+    android:padding="24dp"
+    android:background="#080B12">
 
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Android Assistant"
-        android:textSize="28sp"
+        android:layout_marginTop="24dp"
+        android:text="ORION"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
         android:textStyle="bold"
-        android:layout_marginBottom="32dp" />
+        android:letterSpacing="0.18"
+        android:fontFamily="sans" />
+
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="VOICE ASSISTANT"
+        android:textColor="#7C8799"
+        android:textSize="11sp"
+        android:letterSpacing="0.25" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Готовий"
+        android:textColor="#8FA8C7"
         android:textSize="18sp"
-        android:layout_marginBottom="16dp" />
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/listen"
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:layout_marginTop="28dp"
+        android:background="@drawable/mic_button"
+        android:elevation="12dp"
+        android:text="🎙"
+        android:textColor="#FFFFFF"
+        android:textSize="48sp"
+        android:textAllCaps="false" />
 
     <TextView
         android:id="@+id/command"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="36dp"
         android:gravity="center"
-        android:text="Скажи команду..."
-        android:textSize="20sp"
-        android:layout_marginBottom="32dp" />
+        android:minHeight="48dp"
+        android:text="Натисни мікрофон і скажи команду"
+        android:textColor="#DCE3ED"
+        android:textSize="17sp" />
 
-    <Button
-        android:id="@+id/listen"
+    <TextView
+        android:id="@+id/response_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🎙️ Слухати" />
+        android:layout_marginTop="28dp"
+        android:text="ORION"
+        android:textColor="#586579"
+        android:textSize="11sp"
+        android:letterSpacing="0.2" />
+
+    <TextView
+        android:id="@+id/response"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:minHeight="40dp"
+        android:text="Готовий виконати команду"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="LOCAL VOICE ENGINE"
+        android:textColor="#3F4B5D"
+        android:textSize="10sp"
+        android:letterSpacing="0.15" />
 
 </LinearLayout>
