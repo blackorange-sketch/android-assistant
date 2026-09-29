@@ -24,23 +24,42 @@ class VoiceEngine(
 
     private var wakeMode = false
     private var commandMode = false
+    private var wakeTriggered = false
 
     private val intent = Intent(
         RecognizerIntent.ACTION_RECOGNIZE_SPEECH
     ).apply {
+
         putExtra(
             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
 
+        // Часткові результати потрібні для швидкого wake word.
         putExtra(
             RecognizerIntent.EXTRA_PARTIAL_RESULTS,
-            false
+            true
         )
 
         putExtra(
             RecognizerIntent.EXTRA_MAX_RESULTS,
             3
+        )
+
+        // Довше чекати перед завершенням голосового вводу.
+        putExtra(
+            RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+            5000L
+        )
+
+        putExtra(
+            RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+            3500L
+        )
+
+        putExtra(
+            RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,
+            1500L
         )
     }
 
@@ -62,6 +81,34 @@ class VoiceEngine(
                     onListeningChanged(false)
                 }
 
+                override fun onPartialResults(
+                    partialResults: Bundle?
+                ) {
+                    if (!wakeMode || wakeTriggered) {
+                        return
+                    }
+
+                    val matches =
+                        partialResults?.getStringArrayList(
+                            SpeechRecognizer.RESULTS_RECOGNITION
+                        )
+
+                    if (
+                        matches?.any { containsWakeWord(it) } == true
+                    ) {
+                        wakeTriggered = true
+
+                        wakeMode = false
+                        commandMode = false
+
+                        // Не чекаємо завершення всієї фрази.
+                        recognizer.stopListening()
+
+                        onListeningChanged(false)
+                        onWakeWord()
+                    }
+                }
+
                 override fun onResults(
                     results: Bundle?
                 ) {
@@ -72,18 +119,17 @@ class VoiceEngine(
                             SpeechRecognizer.RESULTS_RECOGNITION
                         )
 
-                    if (matches.isNullOrEmpty()) {
-                        restartWakeMode()
-                        return
-                    }
-
                     if (wakeMode) {
-                        val heardWakeWord =
-                            matches.any { containsWakeWord(it) }
 
-                        if (heardWakeWord) {
+                        if (
+                            !wakeTriggered &&
+                            matches?.any {
+                                containsWakeWord(it)
+                            } == true
+                        ) {
+                            wakeTriggered = true
                             wakeMode = false
-                            commandMode = true
+                            commandMode = false
 
                             onWakeWord()
                         } else {
@@ -96,7 +142,8 @@ class VoiceEngine(
                     if (commandMode) {
                         commandMode = false
 
-                        val result = matches.firstOrNull()
+                        val result =
+                            matches?.firstOrNull()
 
                         if (!result.isNullOrBlank()) {
                             onResult(result)
@@ -108,10 +155,6 @@ class VoiceEngine(
                     }
                 }
 
-                override fun onPartialResults(
-                    partialResults: Bundle?
-                ) = Unit
-
                 override fun onError(
                     error: Int
                 ) {
@@ -122,7 +165,10 @@ class VoiceEngine(
                         return
                     }
 
+                    commandMode = false
+
                     val message = when (error) {
+
                         SpeechRecognizer.ERROR_AUDIO ->
                             "Помилка мікрофона"
 
@@ -145,7 +191,7 @@ class VoiceEngine(
                             "Розпізнавач зайнятий"
 
                         SpeechRecognizer.ERROR_SERVER ->
-                            "Помилка сервера розпізнавання"
+                            "Помилка сервера"
 
                         SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                             "Не почув голос"
@@ -154,7 +200,6 @@ class VoiceEngine(
                             "Помилка розпізнавання: $error"
                     }
 
-                    commandMode = false
                     onError(message)
                 }
 
@@ -177,6 +222,7 @@ class VoiceEngine(
     fun start(language: String = "uk-UA") {
         wakeMode = false
         commandMode = true
+        wakeTriggered = false
 
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE,
@@ -189,6 +235,7 @@ class VoiceEngine(
     fun startWakeWord(language: String = "uk-UA") {
         wakeMode = true
         commandMode = false
+        wakeTriggered = false
 
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE,
@@ -202,6 +249,7 @@ class VoiceEngine(
         if (!wakeMode) return
 
         handler.postDelayed({
+
             if (wakeMode) {
                 try {
                     recognizer.startListening(intent)
@@ -209,10 +257,14 @@ class VoiceEngine(
                     restartWakeMode()
                 }
             }
-        }, 300)
+
+        }, 100)
     }
 
-    private fun containsWakeWord(text: String): Boolean {
+    private fun containsWakeWord(
+        text: String
+    ): Boolean {
+
         val normalized = text
             .lowercase()
             .replace("ё", "е")
@@ -225,14 +277,20 @@ class VoiceEngine(
     fun stop() {
         wakeMode = false
         commandMode = false
+        wakeTriggered = false
+
         handler.removeCallbacksAndMessages(null)
+
         recognizer.stopListening()
     }
 
     fun destroy() {
         wakeMode = false
         commandMode = false
+        wakeTriggered = false
+
         handler.removeCallbacksAndMessages(null)
+
         recognizer.destroy()
     }
 }
