@@ -1,0 +1,107 @@
+package com.androidassistant
+
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.widget.Button
+import android.widget.TextView
+import com.androidassistant.core.CommandRouter
+import com.androidassistant.voice.VoiceEngine
+
+class MainActivity : Activity() {
+
+    private lateinit var voice: VoiceEngine
+    private lateinit var router: CommandRouter
+
+    private lateinit var status: TextView
+    private lateinit var commandText: TextView
+    private lateinit var listenButton: Button
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContentView(R.layout.activity_main)
+
+        status = findViewById(R.id.status)
+        commandText = findViewById(R.id.command)
+        listenButton = findViewById(R.id.listen)
+
+        router = CommandRouter(this)
+
+        voice = VoiceEngine(
+            context = this,
+            onResult = { command ->
+                runOnUiThread {
+                    commandText.text = command
+
+                    val response = router.execute(command)
+
+                    status.text = response
+                }
+            },
+            onError = { error ->
+                runOnUiThread {
+                    status.text = error
+                }
+            },
+            onListeningChanged = { listening ->
+                runOnUiThread {
+                    listenButton.text =
+                        if (listening) "🎙️ Слухаю..." else "🎙️ Слухати"
+                }
+            }
+        )
+
+        listenButton.setOnClickListener {
+            startVoiceRecognition()
+        }
+    }
+
+    private fun startVoiceRecognition() {
+
+        if (
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                REQUEST_RECORD_AUDIO
+            )
+            return
+        }
+
+        voice.start("uk-UA")
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults
+        )
+
+        if (
+            requestCode == REQUEST_RECORD_AUDIO &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            voice.start("uk-UA")
+        } else {
+            status.text = "Потрібен дозвіл на мікрофон"
+        }
+    }
+
+    override fun onDestroy() {
+        voice.destroy()
+        super.onDestroy()
+    }
+
+    companion object {
+        private const val REQUEST_RECORD_AUDIO = 100
+    }
+}
