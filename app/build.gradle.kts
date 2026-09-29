@@ -27,3 +27,8 @@ android {
     }
 
 }
+
+
+dependencies {
+    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8")
+}
