@@ -314,17 +314,26 @@ class VoiceEngine(
                     }
                 }
 
-                val threshold = maxOf(
+                val startThreshold = maxOf(
                     MIN_RMS_THRESHOLD,
                     noiseFloor * NOISE_MULTIPLIER
                 )
+
+                val endThreshold = maxOf(
+                    MIN_RMS_THRESHOLD * 0.75f,
+                    noiseFloor * 1.35f
+                )
+
+                val threshold =
+                    if (speechStarted) endThreshold
+                    else startThreshold
 
                 if (rms >= threshold) {
                     if (!speechStarted) {
                         speechStarted = true
 
                         OrionLogger.log(
-                            "VAD: speech started rms=$rms threshold=$threshold noise=$noiseFloor"
+                            "VAD: speech started rms=$rms startThreshold=$startThreshold endThreshold=$endThreshold noise=$noiseFloor"
                         )
 
                         samples.addAll(preRoll)
@@ -371,6 +380,21 @@ class VoiceEngine(
                     OrionLogger.log(
                         "VAD: speech ended silenceMs=$silenceMs"
                     )
+
+                    val trimSamples =
+                        SAMPLE_RATE * SILENCE_MS / 1000
+
+                    if (samples.size > trimSamples) {
+                        repeat(
+                            minOf(
+                                trimSamples,
+                                samples.size
+                            )
+                        ) {
+                            samples.removeAt(samples.lastIndex)
+                        }
+                    }
+
                     break
                 }
             }
