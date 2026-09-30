@@ -41,6 +41,16 @@ class MainActivity : Activity() {
         responseText = findViewById(R.id.response)
         listenButton = findViewById(R.id.listen)
 
+        try {
+            val logFile = java.io.File(filesDir, "orion.log")
+            if (logFile.exists()) {
+                val lines = logFile.readLines()
+                val lastLines = lines.takeLast(25).joinToString("\n")
+                responseText.text = lastLines
+            }
+        } catch (_: Exception) {
+        }
+
         router = CommandRouter(this)
         speech = SpeechEngine(this)
 
