@@ -38,6 +38,73 @@ class MainActivity : Activity() {
         OrionLogger.init(this)
         OrionLogger.log("MainActivity created")
 
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                val am = getSystemService(
+                    android.app.ActivityManager::class.java
+                )
+
+                val history =
+                    am.getHistoricalProcessExitReasons(
+                        packageName,
+                        5,
+                        0
+                    )
+
+                if (history.isNotEmpty()) {
+                    val exit = history.first()
+
+                    OrionLogger.log(
+                        "PREVIOUS PROCESS EXIT: " +
+                        "reason=${exit.reason} " +
+                        "status=${exit.status} " +
+                        "description=${exit.description}"
+                    )
+
+                    OrionLogger.log(
+                        "PREVIOUS EXIT IMPORTANCE=${exit.importance}"
+                    )
+
+                    if (exit.reason ==
+                        android.app.ApplicationExitInfo.REASON_CRASH
+                    ) {
+                        OrionLogger.log(
+                            "PREVIOUS EXIT = CRASH"
+                        )
+                    }
+
+                    if (exit.reason ==
+                        android.app.ApplicationExitInfo.REASON_CRASH_NATIVE
+                    ) {
+                        OrionLogger.log(
+                            "PREVIOUS EXIT = NATIVE CRASH"
+                        )
+                    }
+
+                    if (exit.reason ==
+                        android.app.ApplicationExitInfo.REASON_LOW_MEMORY
+                    ) {
+                        OrionLogger.log(
+                            "PREVIOUS EXIT = LOW MEMORY"
+                        )
+                    }
+
+                    if (exit.reason ==
+                        android.app.ApplicationExitInfo.REASON_ANR
+                    ) {
+                        OrionLogger.log(
+                            "PREVIOUS EXIT = ANR"
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            OrionLogger.error(
+                "ExitInfo diagnostic failed",
+                e
+            )
+        }
+
         status = findViewById(R.id.status)
         commandText = findViewById(R.id.command)
         responseText = findViewById(R.id.response)
