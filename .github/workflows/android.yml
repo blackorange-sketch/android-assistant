@@ -39,42 +39,15 @@ jobs:
       - name: Install Android SDK packages
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
-                - name: Download Moonshine Base Ukrainian v2
+
+      - name: Download Moonshine Base Ukrainian v2
         run: |
           mkdir -p app/src/main/assets/models/moonshine-uk
           curl -L --fail --retry 3 \
             https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2 \
             -o /tmp/moonshine.tar.bz2
-
-          tar -xjf /tmp/moonshine.tar.bz2 \
-            -C /tmp
-
-          find /tmp -type f \( \
-            -name "encoder_model.ort" -o \
-            -name "decoder_model_merged.ort" -o \
-            -name "tokens.txt" \
-          \) -print
-
-          MOON_DIR=$(find /tmp -type f -name "encoder_model.ort" -printf '%h\n' | head -n 1)
-
-          cp "$MOON_DIR/encoder_model.ort" \
-            app/src/main/assets/models/moonshine-uk/
-
-          cp "$MOON_DIR/decoder_model_merged.ort" \
-            app/src/main/assets/models/moonshine-uk/
-
-          cp "$MOON_DIR/tokens.txt" \
-            app/src/main/assets/models/moonshine-uk/
-
-          echo "=== MOONSHINE MODEL ==="
-          ls -lh app/src/main/assets/models/moonshine-uk/
-
-      - name: Download Moonshine Base Ukrainian v2
-        run: |
-          mkdir -p app/src/main/assets/models/moonshine-uk
-          curl -L --fail --retry 3 https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2 -o /tmp/moonshine.tar.bz2
           tar -xjf /tmp/moonshine.tar.bz2 -C /tmp
-          MOON_DIR=$(find /tmp -type f -name "encoder_model.ort" -printf "%h\n" | head -n 1)
+          MOON_DIR=$(find /tmp -type f -name "encoder_model.ort" -printf '%h\n' | head -n 1)
           cp "$MOON_DIR/encoder_model.ort" app/src/main/assets/models/moonshine-uk/
           cp "$MOON_DIR/decoder_model_merged.ort" app/src/main/assets/models/moonshine-uk/
           cp "$MOON_DIR/tokens.txt" app/src/main/assets/models/moonshine-uk/
@@ -104,16 +77,17 @@ jobs:
       - name: Verify whisper.cpp model in APK
         run: |
           unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-small/ggml-tiny-q5_1.bin"
+
       - name: Inspect APK native libraries
         run: |
           echo "=== APK ==="
           ls -lh app/build/outputs/apk/debug/app-debug.apk
 
           echo "=== Native libraries ==="
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/.*/.*\\.so$' || true
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/.*/.*\.so$' || true
 
           echo "=== Sherpa / ONNX libraries ==="
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -Ei 'sherpa|onnx|lib.*\\.so' || true
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -Ei 'sherpa|onnx|lib.*\.so' || true
 
           echo "=== ARM64 libraries ==="
           unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'lib/arm64-v8a/' || true
