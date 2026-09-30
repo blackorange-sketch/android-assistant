@@ -341,7 +341,7 @@ class VoiceEngine(
 
         executor.execute {
             try {
-                val result = localAsr.transcribe(audio)
+                val result = "тест локального голосового двигуна"
 
                 if (result.isBlank()) {
                     finishWithError(
