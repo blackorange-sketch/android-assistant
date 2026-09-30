@@ -20,6 +20,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += ""
+                arguments += "-DCMAKE_BUILD_TYPE=Release"
             }
         }
     }
