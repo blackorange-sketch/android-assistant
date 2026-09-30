@@ -1,132 +1,80 @@
 package com.androidassistant.voice
 
 import android.content.Context
-import com.k2fsa.sherpa.onnx.FeatureConfig
-import com.k2fsa.sherpa.onnx.OfflineModelConfig
-import com.k2fsa.sherpa.onnx.OfflineRecognizer
-import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
-import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 
 class LocalAsrEngine(private val context: Context) {
 
     companion object {
         private const val SAMPLE_RATE = 16000
-        private const val FEATURE_DIM = 80
+        private const val MODEL_ASSET = "models/whisper-small/ggml-small-q5_1.bin"
 
-        private const val MODEL_DIR = "models/whisper-tiny"
-
-        private const val ENCODER =
-            "$MODEL_DIR/tiny-encoder.int8.onnx"
-
-        private const val DECODER =
-            "$MODEL_DIR/tiny-decoder.int8.onnx"
-
-        private const val TOKENS =
-            "$MODEL_DIR/tiny-tokens.txt"
+        init {
+            System.loadLibrary("orion_whisper")
+        }
     }
 
-    private var recognizer: OfflineRecognizer? = null
+    private var nativeContext: Long = 0
 
     @Synchronized
-    fun initialize() {
-        if (recognizer != null) return
+    private fun initialize() {
+        if (nativeContext != 0L) return
 
-        OrionLogger.log("=== WHISPER INITIALIZE ===")
+        OrionLogger.log("=== WHISPER.CPP INITIALIZE ===")
+        OrionLogger.log("Loading model: $MODEL_ASSET")
 
-        val whisperConfig = OfflineWhisperModelConfig(
-            encoder = ENCODER,
-            decoder = DECODER,
-            language = "uk",
-            task = "transcribe"
-        )
+        nativeContext = nativeInit(context.assets, MODEL_ASSET)
 
-        val modelConfig = OfflineModelConfig(
-            whisper = whisperConfig,
-            tokens = TOKENS,
-            numThreads = 1,
-            provider = "cpu",
-            modelType = "whisper"
-        )
+        if (nativeContext == 0L) {
+            throw IllegalStateException("Не вдалося завантажити whisper.cpp model")
+        }
 
-        val featureConfig = FeatureConfig(
-            sampleRate = SAMPLE_RATE,
-            featureDim = FEATURE_DIM
-        )
-
-        val recognizerConfig = OfflineRecognizerConfig(
-            featConfig = featureConfig,
-            modelConfig = modelConfig,
-            decodingMethod = "greedy_search"
-        )
-
-        OrionLogger.log("Creating OfflineRecognizer")
-
-        recognizer = OfflineRecognizer(
-            assetManager = context.assets,
-            config = recognizerConfig
-        )
-
-        OrionLogger.log("OfflineRecognizer ready")
+        OrionLogger.log("whisper.cpp context ready")
     }
 
     fun transcribe(samples: FloatArray): String {
-        OrionLogger.log(
-            "Whisper transcribe: samples=${samples.size}"
-        )
+        OrionLogger.log("whisper.cpp transcribe: samples=${samples.size}")
 
-        if (samples.isEmpty()) {
-            OrionLogger.log("Whisper: empty audio")
-            return ""
-        }
+        if (samples.isEmpty()) return ""
 
-        if (recognizer == null) {
+        if (nativeContext == 0L) {
             initialize()
         }
 
-        val r = recognizer
-            ?: throw IllegalStateException("Whisper recognizer unavailable")
+        val result = nativeTranscribe(
+            nativeContext,
+            samples,
+            SAMPLE_RATE,
+            4
+        )
 
-        OrionLogger.log("Whisper: creating stream")
-
-        val stream = r.createStream()
-
-        try {
-            stream.acceptWaveform(
-                samples,
-                SAMPLE_RATE
-            )
-
-            OrionLogger.log("Whisper: waveform accepted")
-
-            r.decode(stream)
-
-            OrionLogger.log("Whisper: decode finished")
-
-            val result = r.getResult(stream)
-
-            OrionLogger.log(
-                "Whisper result: ${result.text}"
-            )
-
-            return result.text.trim()
-        } finally {
-            stream.release()
-            OrionLogger.log("Whisper: stream released")
-        }
+        OrionLogger.log("whisper.cpp result: $result")
+        return result.trim()
     }
 
     fun destroy() {
-        OrionLogger.log("Whisper: destroy")
+        OrionLogger.log("whisper.cpp destroy")
 
         synchronized(this) {
-            try {
-                recognizer?.release()
-            } catch (_: Throwable) {
+            if (nativeContext != 0L) {
+                nativeFree(nativeContext)
+                nativeContext = 0
             }
-
-            recognizer = null
         }
 
-        OrionLogger.log("Whisper: destroyed")
+        OrionLogger.log("whisper.cpp destroyed")
     }
+
+    private external fun nativeInit(
+        assetManager: android.content.res.AssetManager,
+        assetPath: String
+    ): Long
+
+    private external fun nativeTranscribe(
+        context: Long,
+        samples: FloatArray,
+        sampleRate: Int,
+        threads: Int
+    ): String
+
+    private external fun nativeFree(context: Long)
 }
