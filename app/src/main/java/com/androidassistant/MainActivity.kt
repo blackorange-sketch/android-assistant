@@ -41,57 +41,6 @@ class MainActivity : Activity() {
         responseText = findViewById(R.id.response)
         listenButton = findViewById(R.id.listen)
 
-        val copyLogButton = Button(this).apply {
-            text = "COPY LOG"
-            setOnClickListener {
-                try {
-                    val logFile = java.io.File(filesDir, "orion.log")
-
-                    val log = if (logFile.exists()) {
-                        logFile.readText(Charsets.UTF_8)
-                    } else {
-                        "ORION LOG EMPTY"
-                    }
-
-                    val clipboard =
-                        getSystemService(CLIPBOARD_SERVICE)
-                            as ClipboardManager
-
-                    clipboard.setPrimaryClip(
-                        ClipData.newPlainText(
-                            "ORION LOG",
-                            log
-                        )
-                    )
-
-                    responseText.text =
-                        "LOG COPIED\n${log.takeLast(1000)}"
-
-                } catch (e: Exception) {
-                    responseText.text =
-                        "LOG ERROR: ${e.message}"
-                }
-            }
-        }
-
-        addContentView(
-            copyLogButton,
-            android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        )
-
-        try {
-            val logFile = java.io.File(filesDir, "orion.log")
-            if (logFile.exists()) {
-                val lines = logFile.readLines()
-                val lastLines = lines.takeLast(25).joinToString("\n")
-                responseText.text = lastLines
-            }
-        } catch (_: Exception) {
-        }
-
         router = CommandRouter(this)
         speech = SpeechEngine(this)
 
