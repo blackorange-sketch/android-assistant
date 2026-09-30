@@ -35,6 +35,35 @@ jobs:
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Download Whisper tiny multilingual INT8
+        run: |
+          mkdir -p app/src/main/assets/models/whisper-tiny
+
+          curl -L \
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2 \
+            -o whisper-tiny.tar.bz2
+
+          tar -xjf whisper-tiny.tar.bz2
+
+          cp sherpa-onnx-whisper-tiny/tiny-encoder.int8.onnx \
+            app/src/main/assets/models/whisper-tiny/
+
+          cp sherpa-onnx-whisper-tiny/tiny-decoder.int8.onnx \
+            app/src/main/assets/models/whisper-tiny/
+
+          cp sherpa-onnx-whisper-tiny/tiny-tokens.txt \
+            app/src/main/assets/models/whisper-tiny/
+
+          rm -rf sherpa-onnx-whisper-tiny
+          rm whisper-tiny.tar.bz2
+
+          echo "=== WHISPER MODEL FILES ==="
+          ls -lh app/src/main/assets/models/whisper-tiny
+
+          test -f app/src/main/assets/models/whisper-tiny/tiny-encoder.int8.onnx
+          test -f app/src/main/assets/models/whisper-tiny/tiny-decoder.int8.onnx
+          test -f app/src/main/assets/models/whisper-tiny/tiny-tokens.txt
+
       - name: Generate Gradle Wrapper
         run: |
           gradle wrapper --gradle-version 9.6.0
@@ -44,16 +73,24 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Verify Whisper model inside APK
+        run: |
+          echo "=== APK WHISPER MODEL CHECK ==="
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-tiny"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "tiny-encoder.int8.onnx"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "tiny-decoder.int8.onnx"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "tiny-tokens.txt"
+
       - name: Inspect APK native libraries
         run: |
           echo "=== APK ==="
           ls -lh app/build/outputs/apk/debug/app-debug.apk
 
           echo "=== Native libraries ==="
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/.*/.*\\.so$' || true
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/.*/.*\.so$' || true
 
           echo "=== Sherpa / ONNX libraries ==="
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -Ei 'sherpa|onnx|lib.*\\.so' || true
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -Ei 'sherpa|onnx|lib.*\.so' || true
 
           echo "=== ARM64 libraries ==="
           unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'lib/arm64-v8a/' || true
