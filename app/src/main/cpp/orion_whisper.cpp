@@ -148,7 +148,8 @@ Java_com_androidassistant_voice_LocalAsrEngine_nativeTranscribe(
     params.temperature = 0.0f;
     params.temperature_inc = 0.0f;
 
-    LOGI("Running whisper_full: samples=%d threads=%d", length, threads);\n    LOGI("whisper CPU count=%d", whisper_ctx_get_device_count());
+    LOGI("Running whisper_full: samples=%d threads=%d",
+         length, threads);
 
     int result =
         whisper_full(
