@@ -484,7 +484,14 @@ class VoiceEngine(
         executor.execute {
             try {
                 OrionLogger.log("VoiceEngine: calling Citrinet")
-                val result = localAsr.transcribe(audio)
+                val asrAudio = FloatArray(audio.size)
+                for (i in audio.indices) {
+                    asrAudio[i] = (audio[i] * 12f).coerceIn(-1f, 1f)
+                }
+
+                OrionLogger.log("Citrinet: applying gain x12")
+
+                val result = localAsr.transcribe(asrAudio)
                 OrionLogger.log("VoiceEngine: Whisper returned")
 
                 if (result.isBlank()) {
