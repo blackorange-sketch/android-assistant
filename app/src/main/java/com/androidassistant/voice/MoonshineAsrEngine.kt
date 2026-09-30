@@ -40,6 +40,7 @@ class MoonshineAsrEngine(private val context: Context) {
 
         val recognizerConfig = OfflineRecognizerConfig(
             modelConfig = modelConfig,
+            debug = true,
         )
 
         OrionLogger.log("Creating Moonshine OfflineRecognizer")
