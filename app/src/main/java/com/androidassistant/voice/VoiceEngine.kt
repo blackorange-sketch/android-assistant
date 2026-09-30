@@ -36,7 +36,7 @@ class VoiceEngine(
         private const val MIN_RMS_THRESHOLD = 0.008f
     }
 
-    private val localAsr = LocalAsrEngine(context)
+    private val localAsr = CitrinetAsrEngine(context)
 
     private val recognizer =
         SpeechRecognizer.createSpeechRecognizer(context)
@@ -432,7 +432,7 @@ class VoiceEngine(
 
         executor.execute {
             try {
-                OrionLogger.log("VoiceEngine: calling Whisper")
+                OrionLogger.log("VoiceEngine: calling Citrinet")
                 val result = localAsr.transcribe(audio)
                 OrionLogger.log("VoiceEngine: Whisper returned")
 
