@@ -83,7 +83,8 @@ class CitrinetAsrEngine(private val context: Context) {
 
             val result = r.getResult(stream)
             val text = result.text.trim()
-
+OrionLogger.log("Citrinet tokens count=${result.tokens.size}")
+OrionLogger.log("Citrinet tokens=${result.tokens.joinToString("|")}")
             OrionLogger.log("Citrinet result: $text")
 
             return text
