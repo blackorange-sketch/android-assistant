@@ -62,39 +62,40 @@ class LocalAsrEngine(
     }
 
     fun transcribe(samples: FloatArray): String {
-        if (samples.isEmpty()) return ""
+        if (samples.isEmpty()) {
+            return "TEST_EMPTY_AUDIO"
+        }
 
         initialize()
 
-        // Діагностика:
-        // якщо програма падає вже тут — проблема в завантаженні
-        // sherpa-onnx / Whisper native model.
-        return "WHISPER_INITIALIZED_TEST"
-
-        /*
         val localRecognizer = recognizer
             ?: throw IllegalStateException(
                 "Whisper не ініціалізований"
             )
 
+        // TEST 1: createStream
         val stream = localRecognizer.createStream()
 
-        return try {
-            stream.acceptWaveform(
-                samples = samples,
-                sampleRate = SAMPLE_RATE
-            )
+        // TEST 2: acceptWaveform
+        stream.acceptWaveform(
+            samples = samples,
+            sampleRate = SAMPLE_RATE
+        )
 
-            localRecognizer.decode(stream)
+        // TEST 3: decode
+        localRecognizer.decode(stream)
 
-            localRecognizer
-                .getResult(stream)
-                .text
-                .trim()
-        } finally {
-            stream.release()
+        // TEST 4: result
+        val result =
+            localRecognizer.getResult(stream).text.trim()
+
+        stream.release()
+
+        return if (result.isBlank()) {
+            "TEST_DECODE_EMPTY"
+        } else {
+            result
         }
-        */
     }
 
     fun destroy() {
