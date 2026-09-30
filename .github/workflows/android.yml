@@ -15,6 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Download whisper.cpp
+        run: |
+          rm -rf app/src/main/cpp/whisper.cpp
+          git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git app/src/main/cpp/whisper.cpp
+
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
