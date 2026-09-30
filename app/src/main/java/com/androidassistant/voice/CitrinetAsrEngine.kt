@@ -27,34 +27,17 @@ class CitrinetAsrEngine(private val context: Context) {
         OrionLogger.log("=== CITRINET INITIALIZE ===")
         OrionLogger.log("Loading model: $MODEL")
 
-        val nemoConfig = OfflineNemoEncDecCtcModelConfig(
-            model = MODEL
-        )
-
-        val modelConfig = OfflineModelConfig(
-            nemoCtc = nemoConfig,
-            tokens = TOKENS,
-            numThreads = THREADS,
-            provider = "cpu",
-            modelType = ""
-        )
-
-        val featureConfig = FeatureConfig(
-            sampleRate = SAMPLE_RATE,
-            featureDim = FEATURE_DIM
-        )
-
-        val recognizerConfig = OfflineRecognizerConfig(
-            featConfig = featureConfig,
-            modelConfig = modelConfig,
-            decodingMethod = "greedy_search"
-        )
-
         OrionLogger.log("Creating Citrinet OfflineRecognizer")
 
-        recognizer = OfflineRecognizer(
+        recognizer = OfflineRecognizer.fromNemoCtc(
             assetManager = context.assets,
-            config = recognizerConfig
+            model = MODEL,
+            tokens = TOKENS,
+            numThreads = THREADS,
+            sampleRate = SAMPLE_RATE,
+            featureDim = FEATURE_DIM,
+            decodingMethod = "greedy_search",
+            provider = "cpu"
         )
 
         OrionLogger.log("Citrinet recognizer ready")
