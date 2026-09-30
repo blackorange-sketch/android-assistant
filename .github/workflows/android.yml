@@ -40,16 +40,16 @@ jobs:
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Download whisper.cpp Small Q5_1
+      - name: Download whisper.cpp Tiny Q5_1
         run: |
           mkdir -p app/src/main/assets/models/whisper-small
           curl -L --fail --retry 3 \
-            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin \
-            -o app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin
+            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-q5_1.bin \
+            -o app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin
           echo "=== WHISPER.CPP MODEL ==="
-          ls -lh app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin
-          test -f app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin
-          test $(stat -c%s app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin) -gt 180000000
+          ls -lh app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin
+          test -f app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin
+          test $(stat -c%s app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin) -gt 180000000
 
       - name: Generate Gradle Wrapper
         run: |
@@ -62,7 +62,7 @@ jobs:
 
       - name: Verify whisper.cpp model in APK
         run: |
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-small/ggml-small-q5_1.bin"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-small/ggml-tiny-q5_1.bin"
       - name: Inspect APK native libraries
         run: |
           echo "=== APK ==="
