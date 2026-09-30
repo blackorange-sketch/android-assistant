@@ -1,4 +1,6 @@
 package com.androidassistant.voice
+import java.io.FileOutputStream
+import java.io.File
 
 import android.Manifest
 import android.content.Context
@@ -430,6 +432,53 @@ class VoiceEngine(
 
         for (i in samples.indices) {
             audio[i] = samples[i]
+        }
+
+        try {
+            val wavFile = File(context.filesDir, "last_recording.wav")
+            val dataSize = audio.size * 2
+
+            FileOutputStream(wavFile).use { out ->
+                fun writeIntLE(value: Int) {
+                    out.write(value and 0xFF)
+                    out.write((value shr 8) and 0xFF)
+                    out.write((value shr 16) and 0xFF)
+                    out.write((value shr 24) and 0xFF)
+                }
+
+                fun writeShortLE(value: Int) {
+                    out.write(value and 0xFF)
+                    out.write((value shr 8) and 0xFF)
+                }
+
+                out.write("RIFF".toByteArray())
+                writeIntLE(36 + dataSize)
+                out.write("WAVE".toByteArray())
+                out.write("fmt ".toByteArray())
+                writeIntLE(16)
+                writeShortLE(1)
+                writeShortLE(1)
+                writeIntLE(SAMPLE_RATE)
+                writeIntLE(SAMPLE_RATE * 2)
+                writeShortLE(2)
+                writeShortLE(16)
+                out.write("data".toByteArray())
+                writeIntLE(dataSize)
+
+                for (sample in audio) {
+                    val value = (sample * 32767f)
+                        .toInt()
+                        .coerceIn(-32768, 32767)
+
+                    writeShortLE(value)
+                }
+            }
+
+            OrionLogger.log(
+                "WAV saved: ${wavFile.absolutePath} samples=${audio.size}"
+            )
+        } catch (e: Exception) {
+            OrionLogger.error("WAV save failed", e)
         }
 
         executor.execute {
