@@ -16,10 +16,13 @@ class LocalAsrEngine(
         private const val FEATURE_DIM = 80
 
         private const val MODEL_DIR = "models/whisper-tiny"
+
         private const val ENCODER =
             "$MODEL_DIR/tiny-encoder.int8.onnx"
+
         private const val DECODER =
             "$MODEL_DIR/tiny-decoder.int8.onnx"
+
         private const val TOKENS =
             "$MODEL_DIR/tiny-tokens.txt"
     }
@@ -38,7 +41,7 @@ class LocalAsrEngine(
                 task = "transcribe"
             ),
             tokens = TOKENS,
-            numThreads = 4,
+            numThreads = 1,
             provider = "cpu",
             modelType = "whisper"
         )
@@ -63,8 +66,16 @@ class LocalAsrEngine(
 
         initialize()
 
+        // Діагностика:
+        // якщо програма падає вже тут — проблема в завантаженні
+        // sherpa-onnx / Whisper native model.
+        return "WHISPER_INITIALIZED_TEST"
+
+        /*
         val localRecognizer = recognizer
-            ?: throw IllegalStateException("Whisper не ініціалізований")
+            ?: throw IllegalStateException(
+                "Whisper не ініціалізований"
+            )
 
         val stream = localRecognizer.createStream()
 
@@ -76,10 +87,14 @@ class LocalAsrEngine(
 
             localRecognizer.decode(stream)
 
-            localRecognizer.getResult(stream).text.trim()
+            localRecognizer
+                .getResult(stream)
+                .text
+                .trim()
         } finally {
             stream.release()
         }
+        */
     }
 
     fun destroy() {
