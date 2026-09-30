@@ -62,11 +62,15 @@ class LocalAsrEngine(
     }
 
     fun transcribe(samples: FloatArray): String {
+        OrionLogger.log("Whisper: transcribe started")
+        OrionLogger.log("Whisper: samples=${samples.size}")
         if (samples.isEmpty()) {
             return "TEST_EMPTY_AUDIO"
         }
 
+        OrionLogger.log("Whisper: initialize")
         initialize()
+        OrionLogger.log("Whisper: recognizer initialized")
 
         val localRecognizer = recognizer
             ?: throw IllegalStateException(
@@ -74,20 +78,28 @@ class LocalAsrEngine(
             )
 
         // TEST 1: createStream
+        OrionLogger.log("Whisper: createStream")
         val stream = localRecognizer.createStream()
+        OrionLogger.log("Whisper: stream created")
 
         // TEST 2: acceptWaveform
+        OrionLogger.log("Whisper: acceptWaveform")
         stream.acceptWaveform(
             samples = samples,
             sampleRate = SAMPLE_RATE
         )
 
         // TEST 3: decode
+        OrionLogger.log("Whisper: decode")
         localRecognizer.decode(stream)
+        OrionLogger.log("Whisper: decode finished")
 
         // TEST 4: result
         val result =
-            localRecognizer.getResult(stream).text.trim()
+            OrionLogger.log("Whisper: getResult")
+        val result = localRecognizer.getResult(stream).text.trim()
+        OrionLogger.log("Whisper: result='$result'")
+        result
 
         stream.release()
 

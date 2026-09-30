@@ -11,6 +11,7 @@ import android.widget.TextView
 import com.androidassistant.core.CommandRouter
 import com.androidassistant.voice.SpeechEngine
 import com.androidassistant.voice.VoiceEngine
+import com.androidassistant.voice.OrionLogger
 
 class MainActivity : Activity() {
 
@@ -31,6 +32,9 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+
+        OrionLogger.init(this)
+        OrionLogger.log("MainActivity created")
 
         status = findViewById(R.id.status)
         commandText = findViewById(R.id.command)

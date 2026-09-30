@@ -158,6 +158,7 @@ class VoiceEngine(
     }
 
     fun start(language: String = "uk-UA") {
+        OrionLogger.log("VoiceEngine: start command recognition")
         stopWakeRecognizer()
 
         if (
@@ -267,6 +268,7 @@ class VoiceEngine(
         var silenceMs = 0
 
         try {
+            OrionLogger.log("AudioRecord: startRecording")
             record.startRecording()
 
             while (
@@ -326,6 +328,7 @@ class VoiceEngine(
         }
 
         recording = false
+        OrionLogger.log("AudioRecord: finished samples=${samples.size} speechMs=$speechMs")
         onListeningChanged(false)
 
         if (speechMs < MIN_SPEECH_MS) {
@@ -341,7 +344,9 @@ class VoiceEngine(
 
         executor.execute {
             try {
+                OrionLogger.log("VoiceEngine: calling Whisper")
                 val result = localAsr.transcribe(audio)
+                OrionLogger.log("VoiceEngine: Whisper returned")
 
                 if (result.isBlank()) {
                     finishWithError(
