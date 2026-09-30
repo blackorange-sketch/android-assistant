@@ -31,7 +31,12 @@ class LocalAsrEngine(
 
     @Synchronized
     fun initialize() {
-        if (recognizer != null) return
+        OrionLogger.log("Whisper: initialize started")
+
+        if (recognizer != null) {
+            OrionLogger.log("Whisper: recognizer already initialized")
+            return
+        }
 
         val modelConfig = OfflineModelConfig(
             whisper = OfflineWhisperModelConfig(
@@ -46,74 +51,94 @@ class LocalAsrEngine(
             modelType = "whisper"
         )
 
-        val recognizerConfig = OfflineRecognizerConfig(
-            featConfig = FeatureConfig(
-                sampleRate = SAMPLE_RATE,
-                featureDim = FEATURE_DIM
-            ),
-            modelConfig = modelConfig,
-            decodingMethod = "greedy_search"
-        )
+        OrionLogger.log("Whisper: creating OfflineRecognizer")
 
         recognizer = OfflineRecognizer(
             assetManager = context.assets,
-            config = recognizerConfig
+            config = OfflineRecognizerConfig(
+                featConfig = FeatureConfig(
+                    sampleRate = SAMPLE_RATE,
+                    featureDim = FEATURE_DIM
+                ),
+                modelConfig = modelConfig,
+                decodingMethod = "greedy_search"
+            )
         )
+
+        OrionLogger.log("Whisper: OfflineRecognizer created")
     }
 
     fun transcribe(samples: FloatArray): String {
-        OrionLogger.log("Whisper: transcribe started")
-        OrionLogger.log("Whisper: samples=${samples.size}")
+        OrionLogger.log(
+            "Whisper: transcribe started, samples=${samples.size}"
+        )
+
         if (samples.isEmpty()) {
-            return "TEST_EMPTY_AUDIO"
+            OrionLogger.log("Whisper: EMPTY AUDIO")
+            return ""
         }
 
-        OrionLogger.log("Whisper: initialize")
+        OrionLogger.log("Whisper: calling initialize")
         initialize()
-        OrionLogger.log("Whisper: recognizer initialized")
 
         val localRecognizer = recognizer
             ?: throw IllegalStateException(
                 "Whisper не ініціалізований"
             )
 
-        // TEST 1: createStream
-        OrionLogger.log("Whisper: createStream")
+        OrionLogger.log("Whisper: creating stream")
+
         val stream = localRecognizer.createStream()
+
         OrionLogger.log("Whisper: stream created")
 
-        // TEST 2: acceptWaveform
-        OrionLogger.log("Whisper: acceptWaveform")
-        stream.acceptWaveform(
-            samples = samples,
-            sampleRate = SAMPLE_RATE
-        )
+        try {
+            OrionLogger.log("Whisper: acceptWaveform")
 
-        // TEST 3: decode
-        OrionLogger.log("Whisper: decode")
-        localRecognizer.decode(stream)
-        OrionLogger.log("Whisper: decode finished")
+            stream.acceptWaveform(
+                samples = samples,
+                sampleRate = SAMPLE_RATE
+            )
 
-        // TEST 4: result
-        val result =
+            OrionLogger.log("Whisper: acceptWaveform finished")
+
+            OrionLogger.log("Whisper: decode")
+
+            localRecognizer.decode(stream)
+
+            OrionLogger.log("Whisper: decode finished")
+
             OrionLogger.log("Whisper: getResult")
-        val result = localRecognizer.getResult(stream).text.trim()
-        OrionLogger.log("Whisper: result='$result'")
-        result
 
-        stream.release()
+            val text =
+                localRecognizer
+                    .getResult(stream)
+                    .text
+                    .trim()
 
-        return if (result.isBlank()) {
-            "TEST_DECODE_EMPTY"
-        } else {
-            result
+            OrionLogger.log(
+                "Whisper: result='$text'"
+            )
+
+            return text
+
+        } finally {
+            OrionLogger.log("Whisper: releasing stream")
+
+            stream.release()
+
+            OrionLogger.log("Whisper: stream released")
         }
     }
 
     fun destroy() {
+        OrionLogger.log("Whisper: destroy")
+
         synchronized(this) {
             recognizer?.release()
             recognizer = null
         }
+
+        OrionLogger.log("Whisper: destroyed")
     }
 }
