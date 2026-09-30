@@ -35,34 +35,34 @@ jobs:
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Download Whisper Turbo multilingual INT8
+      - name: Download Whisper Small multilingual INT8
         run: |
-          mkdir -p app/src/main/assets/models/whisper-turbo
+          mkdir -p app/src/main/assets/models/whisper-small
 
           curl -L \
-            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-turbo.tar.bz2 \
-            -o whisper-turbo.tar.bz2
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2 \
+            -o whisper-small.tar.bz2
 
           echo "=== TURBO ARCHIVE CONTENT ==="
-          tar -tjf whisper-turbo.tar.bz2 | head -50
+          tar -tjf whisper-small.tar.bz2 | head -50
 
-          tar -xjf whisper-turbo.tar.bz2
+          tar -xjf whisper-small.tar.bz2
 
           echo "=== TURBO EXTRACTED FILES ==="
-          find . -maxdepth 3 -type f | grep "whisper-turbo" | head -50
+          find . -maxdepth 3 -type f | grep "whisper-small" | head -50
 
-          cp sherpa-onnx-whisper-turbo/turbo-encoder.int8.onnx app/src/main/assets/models/whisper-turbo/
-          cp sherpa-onnx-whisper-turbo/turbo-decoder.int8.onnx app/src/main/assets/models/whisper-turbo/
-          cp sherpa-onnx-whisper-turbo/turbo-tokens.txt app/src/main/assets/models/whisper-turbo/
+          cp sherpa-onnx-whisper-small/small-encoder.int8.onnx app/src/main/assets/models/whisper-small/
+          cp sherpa-onnx-whisper-small/small-decoder.int8.onnx app/src/main/assets/models/whisper-small/
+          cp sherpa-onnx-whisper-small/small-tokens.txt app/src/main/assets/models/whisper-small/
 
-          rm -rf sherpa-onnx-whisper-turbo whisper-turbo.tar.bz2
+          rm -rf sherpa-onnx-whisper-small whisper-small.tar.bz2
 
           echo "=== WHISPER TURBO MODEL FILES ==="
-          ls -lh app/src/main/assets/models/whisper-turbo
+          ls -lh app/src/main/assets/models/whisper-small
 
-          test -f app/src/main/assets/models/whisper-turbo/turbo-encoder.int8.onnx
-          test -f app/src/main/assets/models/whisper-turbo/turbo-decoder.int8.onnx
-          test -f app/src/main/assets/models/whisper-turbo/turbo-tokens.txt
+          test -f app/src/main/assets/models/whisper-small/small-encoder.int8.onnx
+          test -f app/src/main/assets/models/whisper-small/small-decoder.int8.onnx
+          test -f app/src/main/assets/models/whisper-small/small-tokens.txt
 
       - name: Generate Gradle Wrapper
         run: |
@@ -75,7 +75,7 @@ jobs:
 
       - name: Verify Whisper model in APK
         run: |
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-turbo"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-small"
       - name: Inspect APK native libraries
         run: |
           echo "=== APK ==="
