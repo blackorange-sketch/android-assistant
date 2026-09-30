@@ -51,7 +51,18 @@ jobs:
           echo "=== TURBO EXTRACTED FILES ==="
           find . -maxdepth 3 -type f | grep "whisper-turbo" | head -50
 
-          rm whisper-turbo.tar.bz2
+          cp sherpa-onnx-whisper-turbo/turbo-encoder.int8.onnx app/src/main/assets/models/whisper-turbo/
+          cp sherpa-onnx-whisper-turbo/turbo-decoder.int8.onnx app/src/main/assets/models/whisper-turbo/
+          cp sherpa-onnx-whisper-turbo/turbo-tokens.txt app/src/main/assets/models/whisper-turbo/
+
+          rm -rf sherpa-onnx-whisper-turbo whisper-turbo.tar.bz2
+
+          echo "=== WHISPER TURBO MODEL FILES ==="
+          ls -lh app/src/main/assets/models/whisper-turbo
+
+          test -f app/src/main/assets/models/whisper-turbo/turbo-encoder.int8.onnx
+          test -f app/src/main/assets/models/whisper-turbo/turbo-decoder.int8.onnx
+          test -f app/src/main/assets/models/whisper-turbo/turbo-tokens.txt
 
       - name: Generate Gradle Wrapper
         run: |
