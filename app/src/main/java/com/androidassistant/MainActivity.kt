@@ -5,6 +5,8 @@ import android.animation.AnimatorInflater
 import android.animation.AnimatorSet
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
@@ -40,6 +42,42 @@ class MainActivity : Activity() {
         commandText = findViewById(R.id.command)
         responseText = findViewById(R.id.response)
         listenButton = findViewById(R.id.listen)
+
+        val copyLogButton =
+            findViewById<Button>(R.id.copy_log)
+
+        copyLogButton.setOnClickListener {
+            try {
+                val logFile =
+                    java.io.File(filesDir, "orion.log")
+
+                val log =
+                    if (logFile.exists()) {
+                        logFile.readText(Charsets.UTF_8)
+                    } else {
+                        "ORION LOG EMPTY"
+                    }
+
+                val clipboard =
+                    getSystemService(
+                        CLIPBOARD_SERVICE
+                    ) as ClipboardManager
+
+                clipboard.setPrimaryClip(
+                    ClipData.newPlainText(
+                        "ORION LOG",
+                        log
+                    )
+                )
+
+                responseText.text =
+                    "LOG СКОПІЙОВАНО (${log.length} символів)"
+
+            } catch (e: Exception) {
+                responseText.text =
+                    "Помилка LOG: ${e.message}"
+            }
+        }
 
         router = CommandRouter(this)
         speech = SpeechEngine(this)
