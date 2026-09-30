@@ -27,10 +27,13 @@ class VoiceEngine(
 
     companion object {
         private const val SAMPLE_RATE = 16000
-        private const val MIN_SPEECH_MS = 300
+        private const val MIN_SPEECH_MS = 250
         private const val SILENCE_MS = 700
         private const val MAX_RECORDING_MS = 10000
-        private const val RMS_THRESHOLD = 0.010f
+        private const val NOISE_CALIBRATION_MS = 300
+        private const val PRE_ROLL_MS = 300
+        private const val NOISE_MULTIPLIER = 2.2f
+        private const val MIN_RMS_THRESHOLD = 0.008f
     }
 
     private val localAsr = LocalAsrEngine(context)
@@ -261,11 +264,17 @@ class VoiceEngine(
         }
 
         val samples = ArrayList<Float>()
-        val buffer = ShortArray(SAMPLE_RATE / 10)
+        val preRoll = ArrayList<Float>()
+        val buffer = ShortArray(SAMPLE_RATE / 20)
 
         var totalMs = 0
         var speechMs = 0
         var silenceMs = 0
+
+        var noiseSum = 0.0
+        var noiseChunks = 0
+        var noiseFloor = 0.004f
+        var speechStarted = false
 
         try {
             OrionLogger.log("AudioRecord: startRecording")
@@ -284,36 +293,91 @@ class VoiceEngine(
                 if (read <= 0) continue
 
                 var energy = 0.0
+                val chunk = FloatArray(read)
 
                 for (i in 0 until read) {
                     val value = buffer[i] / 32768.0f
-                    samples.add(value)
+                    chunk[i] = value
                     energy += value * value
                 }
 
-                val rms = sqrt(
-                    energy / read
-                ).toFloat()
-
-                val chunkMs =
-                    read * 1000 / SAMPLE_RATE
-
+                val rms = sqrt(energy / read).toFloat()
+                val chunkMs = read * 1000 / SAMPLE_RATE
                 totalMs += chunkMs
 
-                if (rms >= RMS_THRESHOLD) {
+                if (!speechStarted && totalMs <= NOISE_CALIBRATION_MS) {
+                    noiseSum += rms
+                    noiseChunks++
+
+                    if (noiseChunks > 0) {
+                        noiseFloor = (noiseSum / noiseChunks).toFloat()
+                    }
+                }
+
+                val threshold = maxOf(
+                    MIN_RMS_THRESHOLD,
+                    noiseFloor * NOISE_MULTIPLIER
+                )
+
+                if (rms >= threshold) {
+                    if (!speechStarted) {
+                        speechStarted = true
+
+                        OrionLogger.log(
+                            "VAD: speech started rms=$rms threshold=$threshold noise=$noiseFloor"
+                        )
+
+                        samples.addAll(preRoll)
+                        preRoll.clear()
+                    }
+
+                    for (value in chunk) {
+                        samples.add(value)
+                    }
+
                     speechMs += chunkMs
                     silenceMs = 0
-                } else if (speechMs >= MIN_SPEECH_MS) {
-                    silenceMs += chunkMs
+                } else {
+                    if (!speechStarted) {
+                        for (value in chunk) {
+                            preRoll.add(value)
+                        }
+
+                        val maxPreRollSamples =
+                            SAMPLE_RATE * PRE_ROLL_MS / 1000
+
+                        if (preRoll.size > maxPreRollSamples) {
+                            val removeCount =
+                                preRoll.size - maxPreRollSamples
+
+                            repeat(removeCount) {
+                                preRoll.removeAt(0)
+                            }
+                        }
+                    } else {
+                        for (value in chunk) {
+                            samples.add(value)
+                        }
+
+                        silenceMs += chunkMs
+                    }
                 }
 
                 if (
+                    speechStarted &&
                     speechMs >= MIN_SPEECH_MS &&
                     silenceMs >= SILENCE_MS
                 ) {
+                    OrionLogger.log(
+                        "VAD: speech ended silenceMs=$silenceMs"
+                    )
                     break
                 }
             }
+
+            OrionLogger.log(
+                "VAD: totalMs=$totalMs speechMs=$speechMs silenceMs=$silenceMs noise=$noiseFloor"
+            )
         } catch (_: Exception) {
             finishWithError("Помилка запису з мікрофона")
             return
