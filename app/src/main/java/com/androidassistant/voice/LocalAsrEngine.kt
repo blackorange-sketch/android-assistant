@@ -1,6 +1,7 @@
 package com.androidassistant.voice
 
 import android.content.Context
+
 import com.k2fsa.sherpa.onnx.FeatureConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
@@ -31,114 +32,161 @@ class LocalAsrEngine(
 
     @Synchronized
     fun initialize() {
-        OrionLogger.log("Whisper: initialize started")
 
-        if (recognizer != null) {
-            OrionLogger.log("Whisper: recognizer already initialized")
-            return
-        }
+        OrionLogger.log("=== WHISPER DIAGNOSTIC START ===")
 
-        val modelConfig = OfflineModelConfig(
-            whisper = OfflineWhisperModelConfig(
-                encoder = ENCODER,
-                decoder = DECODER,
-                language = "uk",
-                task = "transcribe"
-            ),
-            tokens = TOKENS,
-            numThreads = 1,
-            provider = "cpu",
-            modelType = "whisper"
-        )
+        try {
+            val am = context.assets
 
-        OrionLogger.log("Whisper: creating OfflineRecognizer")
+            OrionLogger.log(
+                "Memory: max=${Runtime.getRuntime().maxMemory()} " +
+                "total=${Runtime.getRuntime().totalMemory()} " +
+                "free=${Runtime.getRuntime().freeMemory()}"
+            )
 
-        recognizer = OfflineRecognizer(
-            assetManager = context.assets,
-            config = OfflineRecognizerConfig(
-                featConfig = FeatureConfig(
+            OrionLogger.log("Checking model assets")
+
+            val encoderSize =
+                am.open(ENCODER).use { it.available() }
+
+            OrionLogger.log(
+                "Encoder asset OK: $encoderSize bytes"
+            )
+
+            val decoderSize =
+                am.open(DECODER).use { it.available() }
+
+            OrionLogger.log(
+                "Decoder asset OK: $decoderSize bytes"
+            )
+
+            val tokensSize =
+                am.open(TOKENS).use { it.available() }
+
+            OrionLogger.log(
+                "Tokens asset OK: $tokensSize bytes"
+            )
+
+            OrionLogger.log(
+                "Creating OfflineWhisperModelConfig"
+            )
+
+            val whisperConfig =
+                OfflineWhisperModelConfig(
+                    encoder = ENCODER,
+                    decoder = DECODER,
+                    language = "uk",
+                    task = "transcribe"
+                )
+
+            OrionLogger.log(
+                "OfflineWhisperModelConfig created"
+            )
+
+            val modelConfig =
+                OfflineModelConfig(
+                    whisper = whisperConfig,
+                    tokens = TOKENS,
+                    numThreads = 1,
+                    provider = "cpu",
+                    modelType = "whisper"
+                )
+
+            OrionLogger.log(
+                "OfflineModelConfig created"
+            )
+
+            val featureConfig =
+                FeatureConfig(
                     sampleRate = SAMPLE_RATE,
                     featureDim = FEATURE_DIM
-                ),
-                modelConfig = modelConfig,
-                decodingMethod = "greedy_search"
-            )
-        )
+                )
 
-        OrionLogger.log("Whisper: OfflineRecognizer created")
+            OrionLogger.log(
+                "FeatureConfig created"
+            )
+
+            val recognizerConfig =
+                OfflineRecognizerConfig(
+                    featConfig = featureConfig,
+                    modelConfig = modelConfig,
+                    decodingMethod = "greedy_search"
+                )
+
+            OrionLogger.log(
+                "OfflineRecognizerConfig created"
+            )
+
+            OrionLogger.log(
+                "ABOUT TO CREATE OFFLINE RECOGNIZER"
+            )
+
+            recognizer =
+                OfflineRecognizer(
+                    assetManager = context.assets,
+                    config = recognizerConfig
+                )
+
+            OrionLogger.log(
+                "!!! OFFLINE RECOGNIZER CREATED SUCCESSFULLY !!!"
+            )
+
+            OrionLogger.log(
+                "Memory after recognizer: " +
+                "max=${Runtime.getRuntime().maxMemory()} " +
+                "total=${Runtime.getRuntime().totalMemory()} " +
+                "free=${Runtime.getRuntime().freeMemory()}"
+            )
+
+            OrionLogger.log(
+                "=== WHISPER DIAGNOSTIC SUCCESS ==="
+            )
+
+        } catch (e: Throwable) {
+
+            OrionLogger.error(
+                "Whisper initialize Java exception",
+                e
+            )
+
+            throw e
+        }
     }
 
     fun transcribe(samples: FloatArray): String {
+
         OrionLogger.log(
-            "Whisper: transcribe started, samples=${samples.size}"
+            "Whisper diagnostic transcribe called"
         )
 
-        if (samples.isEmpty()) {
-            OrionLogger.log("Whisper: EMPTY AUDIO")
-            return ""
+        if (recognizer == null) {
+            initialize()
         }
 
-        OrionLogger.log("Whisper: calling initialize")
-        initialize()
+        OrionLogger.log(
+            "Whisper diagnostic: recognizer exists"
+        )
 
-        val localRecognizer = recognizer
-            ?: throw IllegalStateException(
-                "Whisper не ініціалізований"
-            )
-
-        OrionLogger.log("Whisper: creating stream")
-
-        val stream = localRecognizer.createStream()
-
-        OrionLogger.log("Whisper: stream created")
-
-        try {
-            OrionLogger.log("Whisper: acceptWaveform")
-
-            stream.acceptWaveform(
-                samples = samples,
-                sampleRate = SAMPLE_RATE
-            )
-
-            OrionLogger.log("Whisper: acceptWaveform finished")
-
-            OrionLogger.log("Whisper: decode")
-
-            localRecognizer.decode(stream)
-
-            OrionLogger.log("Whisper: decode finished")
-
-            OrionLogger.log("Whisper: getResult")
-
-            val text =
-                localRecognizer
-                    .getResult(stream)
-                    .text
-                    .trim()
-
-            OrionLogger.log(
-                "Whisper: result='$text'"
-            )
-
-            return text
-
-        } finally {
-            OrionLogger.log("Whisper: releasing stream")
-
-            stream.release()
-
-            OrionLogger.log("Whisper: stream released")
-        }
+        return "WHISPER_INIT_OK"
     }
 
     fun destroy() {
-        OrionLogger.log("Whisper: destroy")
+
+        OrionLogger.log(
+            "Whisper: destroy"
+        )
 
         synchronized(this) {
-            recognizer?.release()
+            try {
+                recognizer?.release()
+            } catch (_: Throwable) {
+            }
+
             recognizer = null
         }
 
-        OrionLogger.log("Whisper: destroyed")
+        OrionLogger.log(
+            "Whisper: destroyed"
+        )
     }
 }
