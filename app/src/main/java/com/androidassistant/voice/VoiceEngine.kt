@@ -31,7 +31,7 @@ class VoiceEngine(
         private const val SILENCE_MS = 1200
         private const val MAX_RECORDING_MS = 10000
         private const val NOISE_CALIBRATION_MS = 300
-        private const val PRE_ROLL_MS = 500
+        private const val PRE_ROLL_MS = 800
         private const val NOISE_MULTIPLIER = 2.2f
         private const val MIN_RMS_THRESHOLD = 0.008f
     }
