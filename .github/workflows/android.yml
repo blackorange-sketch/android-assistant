@@ -40,34 +40,16 @@ jobs:
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Download Whisper Small multilingual INT8
+      - name: Download whisper.cpp Small Q5_1
         run: |
           mkdir -p app/src/main/assets/models/whisper-small
-
-          curl -L \
-            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2 \
-            -o whisper-small.tar.bz2
-
-          echo "=== TURBO ARCHIVE CONTENT ==="
-          tar -tjf whisper-small.tar.bz2 | head -50
-
-          tar -xjf whisper-small.tar.bz2
-
-          echo "=== TURBO EXTRACTED FILES ==="
-          find . -maxdepth 3 -type f | grep "whisper-small" | head -50
-
-          cp sherpa-onnx-whisper-small/small-encoder.int8.onnx app/src/main/assets/models/whisper-small/
-          cp sherpa-onnx-whisper-small/small-decoder.int8.onnx app/src/main/assets/models/whisper-small/
-          cp sherpa-onnx-whisper-small/small-tokens.txt app/src/main/assets/models/whisper-small/
-
-          rm -rf sherpa-onnx-whisper-small whisper-small.tar.bz2
-
-          echo "=== WHISPER TURBO MODEL FILES ==="
-          ls -lh app/src/main/assets/models/whisper-small
-
-          test -f app/src/main/assets/models/whisper-small/small-encoder.int8.onnx
-          test -f app/src/main/assets/models/whisper-small/small-decoder.int8.onnx
-          test -f app/src/main/assets/models/whisper-small/small-tokens.txt
+          curl -L --fail --retry 3 \
+            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin \
+            -o app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin
+          echo "=== WHISPER.CPP MODEL ==="
+          ls -lh app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin
+          test -f app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin
+          test $(stat -c%s app/src/main/assets/models/whisper-small/ggml-small-q5_1.bin) -gt 180000000
 
       - name: Generate Gradle Wrapper
         run: |
@@ -78,9 +60,9 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Verify Whisper model in APK
+      - name: Verify whisper.cpp model in APK
         run: |
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-small"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-small/ggml-small-q5_1.bin"
       - name: Inspect APK native libraries
         run: |
           echo "=== APK ==="
