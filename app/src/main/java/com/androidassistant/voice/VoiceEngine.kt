@@ -155,12 +155,6 @@ class VoiceEngine(
             }
         )
 
-        executor.execute {
-            try {
-                localAsr.initialize()
-            } catch (_: Exception) {
-            }
-        }
     }
 
     fun start(language: String = "uk-UA") {
