@@ -303,6 +303,8 @@ class VoiceEngine(
 
                 val rms = sqrt(energy / read).toFloat()
                 val chunkMs = read * 1000 / SAMPLE_RATE
+
+                OrionLogger.log("VAD: chunk rms=$rms speechStarted=$speechStarted")
                 totalMs += chunkMs
 
                 if (!speechStarted && totalMs <= NOISE_CALIBRATION_MS) {
