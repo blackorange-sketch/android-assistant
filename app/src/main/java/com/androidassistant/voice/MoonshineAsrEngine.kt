@@ -1,7 +1,6 @@
 package com.androidassistant.voice
 
 import android.content.Context
-import com.k2fsa.sherpa.onnx.FeatureConfig
 import com.k2fsa.sherpa.onnx.OfflineMoonshineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
@@ -41,16 +40,9 @@ class MoonshineAsrEngine(private val context: Context) {
             tokens = TOKENS,
             numThreads = THREADS,
             provider = "cpu",
-            modelType = "moonshine",
-        )
-
-        val featureConfig = FeatureConfig(
-            sampleRate = SAMPLE_RATE,
-            featureDim = FEATURE_DIM,
         )
 
         val recognizerConfig = OfflineRecognizerConfig(
-            featConfig = featureConfig,
             modelConfig = modelConfig,
         )
 
