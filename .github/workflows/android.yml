@@ -75,7 +75,7 @@ jobs:
 
       - name: Verify Whisper model in APK
         run: |
-          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-base"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "models/whisper-turbo"
       - name: Inspect APK native libraries
         run: |
           echo "=== APK ==="
