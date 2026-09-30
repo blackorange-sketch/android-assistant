@@ -11,8 +11,6 @@ class MoonshineAsrEngine(private val context: Context) {
     companion object {
         private const val SAMPLE_RATE = 16000
         private const val FEATURE_DIM = 80
-        private const val THREADS = 4
-
         private const val MODEL_DIR = "models/moonshine-uk"
         private const val ENCODER = "$MODEL_DIR/encoder_model.ort"
         private const val MERGED_DECODER = "$MODEL_DIR/decoder_model_merged.ort"
@@ -38,8 +36,6 @@ class MoonshineAsrEngine(private val context: Context) {
         val modelConfig = OfflineModelConfig(
             moonshine = moonshineConfig,
             tokens = TOKENS,
-            numThreads = THREADS,
-            provider = "cpu",
         )
 
         val recognizerConfig = OfflineRecognizerConfig(
