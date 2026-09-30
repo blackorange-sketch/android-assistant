@@ -44,6 +44,20 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Inspect APK native libraries
+        run: |
+          echo "=== APK ==="
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+          echo "=== Native libraries ==="
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/.*/.*\\.so$' || true
+
+          echo "=== Sherpa / ONNX libraries ==="
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -Ei 'sherpa|onnx|lib.*\\.so' || true
+
+          echo "=== ARM64 libraries ==="
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'lib/arm64-v8a/' || true
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
