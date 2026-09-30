@@ -382,7 +382,7 @@ class VoiceEngine(
                     )
 
                     val trimSamples =
-                        SAMPLE_RATE * SILENCE_MS / 1000
+                        SAMPLE_RATE * maxOf(0, silenceMs - 200) / 1000
 
                     if (samples.size > trimSamples) {
                         repeat(
