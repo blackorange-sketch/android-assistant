@@ -43,7 +43,7 @@ class LocalAsrEngine(private val context: Context) {
         val modelConfig = OfflineModelConfig(
             whisper = whisperConfig,
             tokens = TOKENS,
-            numThreads = 2,
+            numThreads = 1,
             provider = "cpu",
             modelType = "whisper"
         )
