@@ -6,7 +6,7 @@ class LocalAsrEngine(private val context: Context) {
 
     companion object {
         private const val SAMPLE_RATE = 16000
-        private const val MODEL_ASSET = "models/whisper-small/ggml-small-q5_1.bin"
+        private const val MODEL_ASSET = "models/whisper-small/ggml-tiny-q5_1.bin"
 
         init {
             System.loadLibrary("orion_whisper")
