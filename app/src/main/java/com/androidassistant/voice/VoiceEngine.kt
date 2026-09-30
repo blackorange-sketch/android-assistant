@@ -39,6 +39,7 @@ class VoiceEngine(
     }
 
     private val localAsr = CitrinetAsrEngine(context)
+    private val moonshineAsr = MoonshineAsrEngine(context)
 
     private val recognizer =
         SpeechRecognizer.createSpeechRecognizer(context)
@@ -492,6 +493,9 @@ class VoiceEngine(
                 OrionLogger.log("Citrinet: applying gain x12")
 
                 val result = localAsr.transcribe(asrAudio)
+
+                val moonshineResult = moonshineAsr.transcribe(asrAudio)
+                OrionLogger.log("Moonshine A/B result: $moonshineResult")
                 OrionLogger.log("VoiceEngine: Whisper returned")
 
                 if (result.isBlank()) {
@@ -591,6 +595,7 @@ class VoiceEngine(
         stopRecording()
 
         localAsr.destroy()
+        moonshineAsr.destroy()
 
         try {
             recognizer.destroy()
