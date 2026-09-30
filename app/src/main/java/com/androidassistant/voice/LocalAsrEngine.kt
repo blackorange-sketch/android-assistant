@@ -102,7 +102,7 @@ class LocalAsrEngine(private val context: Context) {
 
             OrionLogger.log("Whisper: decode finished")
 
-            val result = stream.result
+            val result = r.getResult(stream)
 
             OrionLogger.log(
                 "Whisper result: ${result.text}"
