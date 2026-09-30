@@ -28,10 +28,10 @@ class VoiceEngine(
     companion object {
         private const val SAMPLE_RATE = 16000
         private const val MIN_SPEECH_MS = 250
-        private const val SILENCE_MS = 700
+        private const val SILENCE_MS = 1200
         private const val MAX_RECORDING_MS = 10000
         private const val NOISE_CALIBRATION_MS = 300
-        private const val PRE_ROLL_MS = 300
+        private const val PRE_ROLL_MS = 500
         private const val NOISE_MULTIPLIER = 2.2f
         private const val MIN_RMS_THRESHOLD = 0.008f
     }
