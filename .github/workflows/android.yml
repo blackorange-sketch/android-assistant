@@ -49,7 +49,7 @@ jobs:
           echo "=== WHISPER.CPP MODEL ==="
           ls -lh app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin
           test -f app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin
-          test $(stat -c%s app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin) -gt 180000000
+          test $(stat -c%s app/src/main/assets/models/whisper-small/ggml-tiny-q5_1.bin) -gt 25000000
 
       - name: Generate Gradle Wrapper
         run: |
