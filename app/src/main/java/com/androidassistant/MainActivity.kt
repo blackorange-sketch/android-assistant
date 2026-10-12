@@ -10,7 +10,11 @@ import android.content.ClipboardManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
-import com.androidassistant.core.CommandRouter
+import android.content.Intent
+import com.androidassistant.asr.AsrProvider
+import com.androidassistant.asr.ModelManager
+import com.androidassistant.nlu.CommandParser
+import com.androidassistant.tools.ToolRegistry
 import com.androidassistant.voice.SpeechEngine
 import com.androidassistant.voice.VoiceEngine
 import com.androidassistant.voice.OrionLogger
@@ -19,7 +23,8 @@ class MainActivity : Activity() {
 
     private lateinit var voice: VoiceEngine
     private lateinit var speech: SpeechEngine
-    private lateinit var router: CommandRouter
+    private lateinit var parser: CommandParser
+    private lateinit var tools: ToolRegistry
 
     private lateinit var status: TextView
     private lateinit var commandText: TextView
@@ -146,7 +151,12 @@ class MainActivity : Activity() {
             }
         }
 
-        router = CommandRouter(this)
+        parser = CommandParser()
+        tools = ToolRegistry(this)
+
+        findViewById<Button>(R.id.models).setOnClickListener {
+            startActivity(Intent(this, ModelsActivity::class.java))
+        }
         speech = SpeechEngine(this)
 
         voice = VoiceEngine(
@@ -160,7 +170,13 @@ class MainActivity : Activity() {
                     commandText.text = command
                     status.text = "Обробляю..."
 
-                    val response = router.execute(command)
+                    val call = parser.parse(command)
+                    OrionLogger.log("Parser: \"$command\" -> $call")
+                    val response = if (call == null) {
+                        "Не знаю цієї команди"
+                    } else {
+                        tools.execute(call).speech
+                    }
 
                     responseText.text = response
                     status.text = "Чекаю «Оріон»"
@@ -337,10 +353,28 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (ModelManager.activeModel(this) == null) {
+            responseText.text = "Спершу завантаж модель розпізнавання: кнопка «МОДЕЛІ»"
+        } else {
+            // Підвантажуємо модель заздалегідь, щоб перша команда не чекала
+            Thread({
+                try {
+                    AsrProvider.engine(applicationContext)
+                } catch (e: Throwable) {
+                    OrionLogger.error("ASR preload failed", e)
+                }
+            }, "asr-preload").start()
+        }
+    }
+
     override fun onDestroy() {
         stopMicAnimation()
         voice.destroy()
         speech.destroy()
+        tools.release()
+        if (isFinishing) AsrProvider.release()
         super.onDestroy()
     }
 

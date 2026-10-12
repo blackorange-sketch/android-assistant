@@ -18,6 +18,7 @@ import android.speech.SpeechRecognizer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.sqrt
+import com.androidassistant.asr.AsrProvider
 
 class VoiceEngine(
     private val context: Context,
@@ -36,10 +37,9 @@ class VoiceEngine(
         private const val PRE_ROLL_MS = 800
         private const val NOISE_MULTIPLIER = 2.2f
         private const val MIN_RMS_THRESHOLD = 0.008f
+        private const val MAX_GAIN = 40f
     }
 
-    private val localAsr = CitrinetAsrEngine(context)
-    private val moonshineAsr = MoonshineAsrEngine(context)
 
     private val recognizer =
         SpeechRecognizer.createSpeechRecognizer(context)
@@ -246,7 +246,8 @@ class VoiceEngine(
 
         val record = try {
             AudioRecord(
-                MediaRecorder.AudioSource.MIC,
+                // VOICE_RECOGNITION налаштоване саме під розпізнавання мови
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
@@ -484,36 +485,47 @@ class VoiceEngine(
 
         executor.execute {
             try {
-                OrionLogger.log("VoiceEngine: calling Citrinet")
-                val asrAudio = FloatArray(audio.size)
-                for (i in audio.indices) {
-                    asrAudio[i] = (audio[i] * 12f).coerceIn(-1f, 1f)
+                val asrAudio = normalize(audio)
+                val started = System.currentTimeMillis()
+                val recognized = AsrProvider.transcribe(context, asrAudio)
+
+                if (recognized == null) {
+                    finishWithError("Модель розпізнавання не завантажена. Відкрий «Моделі».")
+                    return@execute
                 }
 
-                OrionLogger.log("Citrinet: applying gain x12")
-
-                val result = localAsr.transcribe(asrAudio)
-
-                val moonshineResult = moonshineAsr.transcribe(asrAudio)
-                OrionLogger.log("Moonshine A/B result: $moonshineResult")
-                OrionLogger.log("VoiceEngine: Whisper returned")
+                val (model, result) = recognized
+                OrionLogger.log(
+                    "ASR ${model.id}: \"$result\" in ${System.currentTimeMillis() - started} ms"
+                )
 
                 if (result.isBlank()) {
-                    finishWithError(
-                        "Не вдалося розпізнати команду"
-                    )
+                    finishWithError("Не вдалося розпізнати команду")
                 } else {
                     commandMode = false
                     onResult(result)
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                OrionLogger.error("ASR failed", e)
                 finishWithError(
-                    "Помилка локального Whisper: ${
-                        e.message ?: "невідома помилка"
-                    }"
+                    "Помилка розпізнавання: ${e.message ?: "невідома помилка"}"
                 )
             }
         }
+    }
+
+    /**
+     * Підганяє гучність так, щоб пік був ~90%. Замість фіксованого ×12:
+     * тихий запис підсилюється, гучний не обрізається.
+     */
+    private fun normalize(audio: FloatArray): FloatArray {
+        var peak = 0f
+        for (v in audio) peak = maxOf(peak, kotlin.math.abs(v))
+        if (peak < 1e-4f) return audio
+
+        val gain = (0.9f / peak).coerceAtMost(MAX_GAIN)
+        OrionLogger.log("Normalize: peak=$peak gain=$gain")
+        return FloatArray(audio.size) { i -> (audio[i] * gain).coerceIn(-1f, 1f) }
     }
 
     private fun finishWithError(message: String) {
@@ -594,8 +606,6 @@ class VoiceEngine(
         stopWakeRecognizer()
         stopRecording()
 
-        localAsr.destroy()
-        moonshineAsr.destroy()
 
         try {
             recognizer.destroy()
